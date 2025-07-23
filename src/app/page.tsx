@@ -1,8 +1,6 @@
 "use client";
-import Image from "next/image";
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { useEffect } from "react";
+import { db } from "./firebase";
 
 export default function Home() {
   useEffect(() => {
@@ -37,20 +35,7 @@ export default function Home() {
     const { getFirestore, collection, addDoc } = await import("firebase/firestore");
 
     // Definir config aquí, ya cargaron las variables de entorno
-    const firebaseConfig = {
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "",
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "",
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "",
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "",
-      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
-      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
-      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || ""
-    };
-
-    console.log("Firebase config:", firebaseConfig);
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    
 
       const map = L.map("map").setView([-33.5, -65], 5);
 

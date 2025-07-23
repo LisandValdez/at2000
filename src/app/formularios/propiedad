@@ -1,0 +1,48 @@
+% Datos del Registro:
+%     Id_Usuario
+%     Id_registro
+%     Temporada (lista desplegable)
+%     propiedad con cultivo (booleano)
+% Datos de Propiedad:
+%     Razón Social (lista desplegable)
+%     Nombre Finca (Texto)
+%     Localidad (Lista desplegable)
+%     Departamento (Autocompletado con Gps)
+%     Provincia (Autocompletado con Gps)
+% Contacto de Finca:
+%     Productor/Apoderado (texto)
+%     Telefono (numero)
+% Perfil de Finca:
+%     Régimen tenencia de la finca (lista desplegable)
+% Maquinaria y Herramientas:
+%     Herramientas (lista desplegable)
+%     Maquinaria (lista desplegable)
+% Infraestructura conservación de plantines:
+%     fecha (lista desplegable)
+%     Temporada (lista desplegable)
+%     Modo conservación (lista desplegable)
+% Suelo:
+%     Textura (lista desplegable)
+% Agua:
+%     Origen del Agua (lista desplegable)
+% Preparacion de la cama:
+%     temporada Preparacion de cama: (lista desplegable)
+%     Armado de cama (lista desplegable)
+%     Valoración de Cama (lista desplegable)
+%     Empresa de Servicio (lista desplegable)
+% Transplante:
+%     Temporada de Transplante (lista desplegable)
+%     Tipo de Transplante (lista desplegable)
+%     Empresa de Servicio de transplante (lista desplegable)
+%     Defectos de Transplante (lista desplegable)
+%     Porcentaje (numero)
+% Cosecha:
+%     Presencia de Agentes de transmición (lista desplegable)
+%     fecha
+%     temporada de cosecha (lista desplegable)
+%     tipo de cosecha (lista desplegable)
+%     Empresa de cosecha (lista desplegable)
+%     Condicionantes Cosecha (lista desplegable)
+%     Porcentaje cosecha (numero)
+% Objetivo Temporada:
+%     Objetivo Inspecciones (numero)
