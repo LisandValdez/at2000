@@ -4,7 +4,10 @@ import { useEffect } from "react";
 import { db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 
-export default function useMapLogic(mapRef: React.RefObject<HTMLDivElement | null>) {
+export default function useMapLogic(
+  mapRef: React.RefObject<HTMLDivElement | null>,
+  options?: { onPolygonCreated?: (data: any) => void }
+) {
   useEffect(() => {
     const leafletScript = document.createElement("script");
     leafletScript.src = "https://unpkg.com/leaflet/dist/leaflet.js";
@@ -64,25 +67,17 @@ export default function useMapLogic(mapRef: React.RefObject<HTMLDivElement | nul
 
       map.addControl(drawControl);
 
-      map.on(L.Draw.Event.CREATED, async (event: any) => {
-        const layer = event.layer;
-        drawnItems.addLayer(layer);
+      map.on(L.Draw.Event.CREATED, (event: any) => {
+  const layer = event.layer;
+  drawnItems.addLayer(layer);
 
-        const geojson = drawnItems.toGeoJSON().features[0];
-        const coords = geojson.geometry.coordinates?.[0]?.map((p: number[]) => ({
-          lat: p[1],
-          lng: p[0],
-        }));
+  const geojson = drawnItems.toGeoJSON().features[0];
 
-        await addDoc(collection(db, "fincas"), {
-          nombre: window.prompt("Nombre de la finca:"),
-          tipo: geojson.geometry.type,
-          coordenadas: coords,
-          fecha: new Date(),
-        });
-
-        alert("Finca guardada en Firebase.");
-      });
+  // Solo dispara el callback sin hacer prompt ni guardar:
+  if (options?.onPolygonCreated) {
+    options.onPolygonCreated(geojson);
+  }
+});
     };
 
     return () => {
@@ -91,5 +86,5 @@ export default function useMapLogic(mapRef: React.RefObject<HTMLDivElement | nul
       document.head.removeChild(leafletCSS);
       document.head.removeChild(drawCSS);
     };
-  }, [mapRef]);
+  }, [mapRef, options]);
 }
