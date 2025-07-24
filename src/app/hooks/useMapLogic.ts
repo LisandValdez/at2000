@@ -1,8 +1,8 @@
 // hooks/useMapLogic.ts
 "use client";
 import { useEffect } from "react";
-import { db } from "../firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
+import { collection } from "firebase/firestore";
 
 export default function useMapLogic(
   mapRef: React.RefObject<HTMLDivElement | null>,
@@ -65,19 +65,55 @@ export default function useMapLogic(
         },
       });
 
+      // 🟢 Agregar el control ANTES de cargar polígonos guardados
       map.addControl(drawControl);
 
+      // 🔽 Traer fincas guardadas y dibujarlas después de agregar control
+      try {
+  const { getDocs } = await import("firebase/firestore");
+  const snapshot = await getDocs(collection(db, "fincas"));
+
+  snapshot.forEach((doc: any) => {
+    const data = doc.data();
+    // Aquí convertimos [{lat, lng}, ...] a [[lat, lng], ...]
+    const polygonCoordsObjects = data.coordenadas;
+
+    if (polygonCoordsObjects && Array.isArray(polygonCoordsObjects)) {
+      const polygonCoords = polygonCoordsObjects.map((coord: { lat: number; lng: number }) => [
+        coord.lat,
+        coord.lng,
+      ]);
+
+      const polygon = L.polygon(polygonCoords, {
+        color: "green",
+        fillOpacity: 0.4,
+      }).addTo(map);
+
+      polygon.bindPopup(`<strong>${data.nombre || "Finca sin nombre"}</strong>`);
+
+      polygon.on("click", () => {
+        if (options?.onPolygonCreated) {
+          options.onPolygonCreated({ ...data, id: doc.id });
+        }
+      });
+    }
+  });
+} catch (error) {
+  console.error("Error cargando fincas desde Firestore:", error);
+}
+
+
       map.on(L.Draw.Event.CREATED, (event: any) => {
-  const layer = event.layer;
-  drawnItems.addLayer(layer);
+        const layer = event.layer;
+        drawnItems.addLayer(layer);
 
-  const geojson = drawnItems.toGeoJSON().features[0];
+        const geojson = drawnItems.toGeoJSON().features[0];
 
-  // Solo dispara el callback sin hacer prompt ni guardar:
-  if (options?.onPolygonCreated) {
-    options.onPolygonCreated(geojson);
-  }
-});
+        // Solo dispara el callback sin hacer prompt ni guardar:
+        if (options?.onPolygonCreated) {
+          options.onPolygonCreated(geojson);
+        }
+      });
     };
 
     return () => {

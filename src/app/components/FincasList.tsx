@@ -1,8 +1,11 @@
+//component to display a list of properties (fincas) and allow users to complete a form for each property
+// This component fetches properties from Firestore and displays them in a list
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db } from "../lib/firebase";
 import FincaForm from "./PropertyForm";
 
 export default function FincasList() {
@@ -62,10 +65,6 @@ export default function FincasList() {
             }}
           >
             <strong>🌾 {finca.nombre}</strong>
-            <br />
-            Tipo: {finca.tipo}
-            <br />
-            Coordenadas: {finca.coordenadas?.length} puntos
             <br />
             Fecha: {new Date(finca.fecha).toLocaleString()}
             <br />
