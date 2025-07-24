@@ -2,58 +2,88 @@
 
 "use client";
 import React, { useEffect, useState } from "react";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 interface FincaFormProps {
   polygonData: any;
   onClose: () => void;
-  initialFormData?: any;  // opcional para edición
+  initialFormData?: any; // opcional para edición
   onSave?: (updatedFormulario: any) => Promise<void>; // para guardar edición
 }
-export default function FincaForm({  polygonData,
+
+export default function FincaForm({
+  polygonData,
   onClose,
   initialFormData,
   onSave,
 }: FincaFormProps) {
   const [formData, setFormData] = useState({
-  NombreFinca: initialFormData?.NombreFinca || "",
-  Id_Usuario: initialFormData?.Id_Usuario || "",
-  Id_registro: initialFormData?.Id_registro || "",
-  Temporada: initialFormData?.Temporada || "",
-  propiedadConCultivo: initialFormData?.propiedadConCultivo || false,
-  RazonSocial: initialFormData?.RazonSocial || "",
-  Localidad: initialFormData?.Localidad || "",
-  Departamento: initialFormData?.Departamento || "",
-  Provincia: initialFormData?.Provincia || "",
-  Productor: initialFormData?.Productor || "",
-  Telefono: initialFormData?.Telefono || "",
-  RegimenTenencia: initialFormData?.RegimenTenencia || "",
-  Herramientas: initialFormData?.Herramientas || "",
-  Maquinaria: initialFormData?.Maquinaria || "",
-  FechaPlantines: initialFormData?.FechaPlantines || "",
-  TemporadaPlantines: initialFormData?.TemporadaPlantines || "",
-  ModoConservacion: initialFormData?.ModoConservacion || "",
-  TexturaSuelo: initialFormData?.TexturaSuelo || "",
-  OrigenAgua: initialFormData?.OrigenAgua || "",
-  TemporadaPreparacion: initialFormData?.TemporadaPreparacion || "",
-  ArmadoCama: initialFormData?.ArmadoCama || "",
-  ValoracionCama: initialFormData?.ValoracionCama || "",
-  EmpresaCama: initialFormData?.EmpresaCama || "",
-  TemporadaTransplante: initialFormData?.TemporadaTransplante || "",
-  TipoTransplante: initialFormData?.TipoTransplante || "",
-  EmpresaTransplante: initialFormData?.EmpresaTransplante || "",
-  DefectosTransplante: initialFormData?.DefectosTransplante || "",
-  PorcentajeTransplante: initialFormData?.PorcentajeTransplante || 0,
-  AgentesTransmision: initialFormData?.AgentesTransmision || "",
-  FechaCosecha: initialFormData?.FechaCosecha || "",
-  TemporadaCosecha: initialFormData?.TemporadaCosecha || "",
-  TipoCosecha: initialFormData?.TipoCosecha || "",
-  EmpresaCosecha: initialFormData?.EmpresaCosecha || "",
-  CondicionantesCosecha: initialFormData?.CondicionantesCosecha || "",
-  PorcentajeCosecha: initialFormData?.PorcentajeCosecha || 0,
-  ObjetivoInspecciones: initialFormData?.ObjetivoInspecciones || 0,
-});
+    NombreFinca: initialFormData?.NombreFinca || "",
+    Id_Usuario: initialFormData?.Id_Usuario || "",
+    Id_registro: initialFormData?.Id_registro || "",
+    Temporada: initialFormData?.Temporada || "",
+    propiedadConCultivo: initialFormData?.propiedadConCultivo || false,
+    RazonSocial: initialFormData?.RazonSocial || "",
+    Localidad: initialFormData?.Localidad || "",
+    Departamento: initialFormData?.Departamento || "",
+    Provincia: initialFormData?.Provincia || "",
+    Productor: initialFormData?.Productor || "",
+    Telefono: initialFormData?.Telefono || "",
+    RegimenTenencia: initialFormData?.RegimenTenencia || "",
+    Herramientas: initialFormData?.Herramientas || "",
+    Maquinaria: initialFormData?.Maquinaria || "",
+    FechaPlantines: initialFormData?.FechaPlantines || "",
+    TemporadaPlantines: initialFormData?.TemporadaPlantines || "",
+    ModoConservacion: initialFormData?.ModoConservacion || "",
+    TexturaSuelo: initialFormData?.TexturaSuelo || "",
+    OrigenAgua: initialFormData?.OrigenAgua || "",
+    TemporadaPreparacion: initialFormData?.TemporadaPreparacion || "",
+    ArmadoCama: initialFormData?.ArmadoCama || "",
+    ValoracionCama: initialFormData?.ValoracionCama || "",
+    EmpresaCama: initialFormData?.EmpresaCama || "",
+    TemporadaTransplante: initialFormData?.TemporadaTransplante || "",
+    TipoTransplante: initialFormData?.TipoTransplante || "",
+    EmpresaTransplante: initialFormData?.EmpresaTransplante || "",
+    DefectosTransplante: initialFormData?.DefectosTransplante || "",
+    PorcentajeTransplante: initialFormData?.PorcentajeTransplante || 0,
+    AgentesTransmision: initialFormData?.AgentesTransmision || "",
+    FechaCosecha: initialFormData?.FechaCosecha || "",
+    TemporadaCosecha: initialFormData?.TemporadaCosecha || "",
+    TipoCosecha: initialFormData?.TipoCosecha || "",
+    EmpresaCosecha: initialFormData?.EmpresaCosecha || "",
+    CondicionantesCosecha: initialFormData?.CondicionantesCosecha || "",
+    PorcentajeCosecha: initialFormData?.PorcentajeCosecha || 0,
+    ObjetivoInspecciones: initialFormData?.ObjetivoInspecciones || 0,
+  });
+
+  // Para autoincrementar el ID de finca
+  const [nextFincaId, setNextFincaId] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Obtener el último Id_registro y sumar 1
+    const fetchNextId = async () => {
+      const q = query(collection(db, "fincas"), orderBy("Id_registro", "desc"));
+      const snapshot = await getDocs(q);
+      if (!initialFormData) {
+        if (!snapshot.empty) {
+          const lastId = parseInt(snapshot.docs[0].data().Id_registro || "0", 10);
+          setNextFincaId(lastId + 1);
+          setFormData((prev) => ({
+            ...prev,
+            Id_registro: (lastId + 1).toString(),
+          }));
+        } else {
+          setNextFincaId(1);
+          setFormData((prev) => ({
+            ...prev,
+            Id_registro: "1",
+          }));
+        }
+      }
+    };
+    fetchNextId();
+  }, [initialFormData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -75,6 +105,17 @@ export default function FincaForm({  polygonData,
       return;
     }
 
+    // Evitar duplicados por NombreFinca y/o Id_registro
+    const q = query(
+      collection(db, "fincas"),
+      where("nombre", "==", formData.NombreFinca)
+    );
+    const snapshot = await getDocs(q);
+    if (!initialFormData && !snapshot.empty) {
+      alert("Ya existe una finca con ese nombre. No se permiten duplicados.");
+      return;
+    }
+
     if (onSave) {
       // Editar finca existente
       try {
@@ -88,16 +129,18 @@ export default function FincaForm({  polygonData,
 
     // Extraer coords de polygonData para usar en fincaDoc
     const coordsNested = polygonData?.geometry?.coordinates ?? [];
-    const coords = coordsNested[0]?.map((p: number[]) => ({
-      lat: p[1],
-      lng: p[0],
-    })) ?? [];
+    const coords =
+      coordsNested[0]?.map((p: number[]) => ({
+        lat: p[1],
+        lng: p[0],
+      })) ?? [];
 
     const fincaDoc = {
       coordenadas: coords,
       tipo: polygonData?.geometry?.type ?? "Polygon",
       fecha: new Date().toISOString(),
       nombre: formData.NombreFinca,
+      Id_registro: formData.Id_registro,
       formulario: { ...formData },
     };
 
@@ -110,12 +153,13 @@ export default function FincaForm({  polygonData,
       alert("Error al guardar la finca, revisa la consola");
     }
   };
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 p-4 border border-gray-300 rounded bg-white shadow max-h-[80vh] overflow-y-auto"
+      className="space-y-4 p-4 border border-green-700 rounded bg-white shadow max-h-[80vh] overflow-y-auto"
     >
-      <h2 className="font-bold text-lg text-green-700">Datos del Registro</h2>
+      <h2 className="font-bold text-lg text-green-800">Datos del Registro</h2>
 
       <input
         name="NombreFinca"
@@ -129,14 +173,16 @@ export default function FincaForm({  polygonData,
       <input
         name="Id_Usuario"
         placeholder="ID Usuario"
+        value={formData.Id_Usuario}
         onChange={handleChange}
         className="border p-2 w-full text-gray-800 placeholder-gray-600"
       />
       <input
         name="Id_registro"
         placeholder="ID Registro"
-        onChange={handleChange}
-        className="border p-2 w-full text-gray-800 placeholder-gray-600"
+        value={formData.Id_registro}
+        readOnly
+        className="border p-2 w-full text-gray-800 placeholder-gray-600 bg-gray-100"
       />
       <select
         name="Temporada"
@@ -144,9 +190,15 @@ export default function FincaForm({  polygonData,
         value={formData.Temporada}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar temporada</option>
-        <option className="text-green-900 bg-green-50" value="2025">2025</option>
-        <option className="text-green-900 bg-green-50" value="2026">2026</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar temporada
+        </option>
+        <option className="text-green-900 bg-green-50" value="2025">
+          2025
+        </option>
+        <option className="text-green-900 bg-green-50" value="2026">
+          2026
+        </option>
       </select>
       <label className="flex items-center space-x-2 text-gray-800">
         <input
@@ -158,40 +210,50 @@ export default function FincaForm({  polygonData,
         <span>Propiedad con cultivo</span>
       </label>
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Datos de Propiedad</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Datos de Propiedad</h2>
       <select
         name="RazonSocial"
         onChange={handleChange}
         value={formData.RazonSocial}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar razón social</option>
-        <option className="text-green-900 bg-green-50" value="SA">SA</option>
-        <option className="text-green-900 bg-green-50" value="SRL">SRL</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar razón social
+        </option>
+        <option className="text-green-900 bg-green-50" value="SA">
+          SA
+        </option>
+        <option className="text-green-900 bg-green-50" value="SRL">
+          SRL
+        </option>
       </select>
       <input
         name="Localidad"
         placeholder="Localidad"
+        value={formData.Localidad}
         onChange={handleChange}
         className="border p-2 w-full text-gray-800 placeholder-gray-600"
       />
       <input
         name="Departamento"
         placeholder="Departamento (GPS)"
+        value={formData.Departamento}
         onChange={handleChange}
         className="border p-2 w-full text-gray-800 placeholder-gray-600"
       />
       <input
         name="Provincia"
         placeholder="Provincia (GPS)"
+        value={formData.Provincia}
         onChange={handleChange}
         className="border p-2 w-full text-gray-800 placeholder-gray-600"
       />
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Contacto de Finca</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Contacto de Finca</h2>
       <input
         name="Productor"
         placeholder="Productor / Apoderado"
+        value={formData.Productor}
         onChange={handleChange}
         className="border p-2 w-full text-gray-800 placeholder-gray-600"
       />
@@ -199,32 +261,45 @@ export default function FincaForm({  polygonData,
         name="Telefono"
         type="number"
         placeholder="Teléfono"
+        value={formData.Telefono}
         onChange={handleChange}
         className="border p-2 w-full text-gray-800 placeholder-gray-600"
       />
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Perfil de Finca</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Perfil de Finca</h2>
       <select
         name="RegimenTenencia"
         onChange={handleChange}
         value={formData.RegimenTenencia}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar régimen de tenencia</option>
-        <option className="text-green-900 bg-green-50" value="Propia">Propia</option>
-        <option className="text-green-900 bg-green-50" value="Alquilada">Alquilada</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar régimen de tenencia
+        </option>
+        <option className="text-green-900 bg-green-50" value="Propia">
+          Propia
+        </option>
+        <option className="text-green-900 bg-green-50" value="Alquilada">
+          Alquilada
+        </option>
       </select>
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Maquinaria y Herramientas</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Maquinaria y Herramientas</h2>
       <select
         name="Herramientas"
         onChange={handleChange}
         value={formData.Herramientas}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar herramientas</option>
-        <option className="text-green-900 bg-green-50" value="Herramienta1">Herramienta1</option>
-        <option className="text-green-900 bg-green-50" value="Herramienta2">Herramienta2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar herramientas
+        </option>
+        <option className="text-green-900 bg-green-50" value="Herramienta1">
+          Herramienta1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Herramienta2">
+          Herramienta2
+        </option>
       </select>
       <select
         name="Maquinaria"
@@ -232,12 +307,20 @@ export default function FincaForm({  polygonData,
         value={formData.Maquinaria}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar maquinaria</option>
-        <option className="text-green-900 bg-green-50" value="Maquinaria1">Maquinaria1</option>
-        <option className="text-green-900 bg-green-50" value="Maquinaria2">Maquinaria2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar maquinaria
+        </option>
+        <option className="text-green-900 bg-green-50" value="Maquinaria1">
+          Maquinaria1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Maquinaria2">
+          Maquinaria2
+        </option>
       </select>
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Infraestructura conservación de plantines</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">
+        Infraestructura conservación de plantines
+      </h2>
       <input
         type="date"
         name="FechaPlantines"
@@ -250,9 +333,15 @@ export default function FincaForm({  polygonData,
         value={formData.TemporadaPlantines}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar temporada</option>
-        <option className="text-green-900 bg-green-50" value="2025">2025</option>
-        <option className="text-green-900 bg-green-50" value="2026">2026</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar temporada
+        </option>
+        <option className="text-green-900 bg-green-50" value="2025">
+          2025
+        </option>
+        <option className="text-green-900 bg-green-50" value="2026">
+          2026
+        </option>
       </select>
       <select
         name="ModoConservacion"
@@ -260,47 +349,75 @@ export default function FincaForm({  polygonData,
         value={formData.ModoConservacion}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar modo de conservación</option>
-        <option className="text-green-900 bg-green-50" value="Modo1">Modo1</option>
-        <option className="text-green-900 bg-green-50" value="Modo2">Modo2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar modo de conservación
+        </option>
+        <option className="text-green-900 bg-green-50" value="Modo1">
+          Modo1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Modo2">
+          Modo2
+        </option>
       </select>
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Suelo</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Suelo</h2>
       <select
         name="TexturaSuelo"
         onChange={handleChange}
         value={formData.TexturaSuelo}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar textura</option>
-        <option className="text-green-900 bg-green-50" value="Arenoso">Arenoso</option>
-        <option className="text-green-900 bg-green-50" value="Arcilloso">Arcilloso</option>
-        <option className="text-green-900 bg-green-50" value="Franco">Franco</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar textura
+        </option>
+        <option className="text-green-900 bg-green-50" value="Arenoso">
+          Arenoso
+        </option>
+        <option className="text-green-900 bg-green-50" value="Arcilloso">
+          Arcilloso
+        </option>
+        <option className="text-green-900 bg-green-50" value="Franco">
+          Franco
+        </option>
       </select>
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Agua</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Agua</h2>
       <select
         name="OrigenAgua"
         onChange={handleChange}
         value={formData.OrigenAgua}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar origen de agua</option>
-        <option className="text-green-900 bg-green-50" value="Pozo">Pozo</option>
-        <option className="text-green-900 bg-green-50" value="Rio">Río</option>
-        <option className="text-green-900 bg-green-50" value="Lluvia">Lluvia</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar origen de agua
+        </option>
+        <option className="text-green-900 bg-green-50" value="Pozo">
+          Pozo
+        </option>
+        <option className="text-green-900 bg-green-50" value="Rio">
+          Río
+        </option>
+        <option className="text-green-900 bg-green-50" value="Lluvia">
+          Lluvia
+        </option>
       </select>
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Preparación de la cama</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Preparación de la cama</h2>
       <select
         name="TemporadaPreparacion"
         onChange={handleChange}
         value={formData.TemporadaPreparacion}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar temporada</option>
-        <option className="text-green-900 bg-green-50" value="2025">2025</option>
-        <option className="text-green-900 bg-green-50" value="2026">2026</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar temporada
+        </option>
+        <option className="text-green-900 bg-green-50" value="2025">
+          2025
+        </option>
+        <option className="text-green-900 bg-green-50" value="2026">
+          2026
+        </option>
       </select>
       <select
         name="ArmadoCama"
@@ -308,9 +425,15 @@ export default function FincaForm({  polygonData,
         value={formData.ArmadoCama}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar armado de cama</option>
-        <option className="text-green-900 bg-green-50" value="Tipo1">Tipo1</option>
-        <option className="text-green-900 bg-green-50" value="Tipo2">Tipo2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar armado de cama
+        </option>
+        <option className="text-green-900 bg-green-50" value="Tipo1">
+          Tipo1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Tipo2">
+          Tipo2
+        </option>
       </select>
       <select
         name="ValoracionCama"
@@ -318,10 +441,18 @@ export default function FincaForm({  polygonData,
         value={formData.ValoracionCama}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar valoración de cama</option>
-        <option className="text-green-900 bg-green-50" value="Buena">Buena</option>
-        <option className="text-green-900 bg-green-50" value="Regular">Regular</option>
-        <option className="text-green-900 bg-green-50" value="Mala">Mala</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar valoración de cama
+        </option>
+        <option className="text-green-900 bg-green-50" value="Buena">
+          Buena
+        </option>
+        <option className="text-green-900 bg-green-50" value="Regular">
+          Regular
+        </option>
+        <option className="text-green-900 bg-green-50" value="Mala">
+          Mala
+        </option>
       </select>
       <select
         name="EmpresaCama"
@@ -329,21 +460,33 @@ export default function FincaForm({  polygonData,
         value={formData.EmpresaCama}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar empresa de servicio</option>
-        <option className="text-green-900 bg-green-50" value="Empresa1">Empresa1</option>
-        <option className="text-green-900 bg-green-50" value="Empresa2">Empresa2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar empresa de servicio
+        </option>
+        <option className="text-green-900 bg-green-50" value="Empresa1">
+          Empresa1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Empresa2">
+          Empresa2
+        </option>
       </select>
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Transplante</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Transplante</h2>
       <select
         name="TemporadaTransplante"
         onChange={handleChange}
         value={formData.TemporadaTransplante}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar temporada</option>
-        <option className="text-green-900 bg-green-50" value="2025">2025</option>
-        <option className="text-green-900 bg-green-50" value="2026">2026</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar temporada
+        </option>
+        <option className="text-green-900 bg-green-50" value="2025">
+          2025
+        </option>
+        <option className="text-green-900 bg-green-50" value="2026">
+          2026
+        </option>
       </select>
       <select
         name="TipoTransplante"
@@ -351,9 +494,15 @@ export default function FincaForm({  polygonData,
         value={formData.TipoTransplante}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar tipo de transplante</option>
-        <option className="text-green-900 bg-green-50" value="Tipo1">Tipo1</option>
-        <option className="text-green-900 bg-green-50" value="Tipo2">Tipo2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar tipo de transplante
+        </option>
+        <option className="text-green-900 bg-green-50" value="Tipo1">
+          Tipo1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Tipo2">
+          Tipo2
+        </option>
       </select>
       <select
         name="EmpresaTransplante"
@@ -361,9 +510,15 @@ export default function FincaForm({  polygonData,
         value={formData.EmpresaTransplante}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar empresa de servicio</option>
-        <option className="text-green-900 bg-green-50" value="Empresa1">Empresa1</option>
-        <option className="text-green-900 bg-green-50" value="Empresa2">Empresa2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar empresa de servicio
+        </option>
+        <option className="text-green-900 bg-green-50" value="Empresa1">
+          Empresa1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Empresa2">
+          Empresa2
+        </option>
       </select>
       <input
         name="DefectosTransplante"
@@ -387,7 +542,7 @@ export default function FincaForm({  polygonData,
         className="border p-2 w-full text-gray-800 placeholder-gray-600"
       />
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Cosecha</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Cosecha</h2>
       <input
         type="date"
         name="FechaCosecha"
@@ -400,9 +555,15 @@ export default function FincaForm({  polygonData,
         value={formData.TemporadaCosecha}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar temporada</option>
-        <option className="text-green-900 bg-green-50" value="2025">2025</option>
-        <option className="text-green-900 bg-green-50" value="2026">2026</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar temporada
+        </option>
+        <option className="text-green-900 bg-green-50" value="2025">
+          2025
+        </option>
+        <option className="text-green-900 bg-green-50" value="2026">
+          2026
+        </option>
       </select>
       <select
         name="TipoCosecha"
@@ -410,9 +571,15 @@ export default function FincaForm({  polygonData,
         value={formData.TipoCosecha}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar tipo de cosecha</option>
-        <option className="text-green-900 bg-green-50" value="Manual">Manual</option>
-        <option className="text-green-900 bg-green-50" value="Mecanizada">Mecanizada</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar tipo de cosecha
+        </option>
+        <option className="text-green-900 bg-green-50" value="Manual">
+          Manual
+        </option>
+        <option className="text-green-900 bg-green-50" value="Mecanizada">
+          Mecanizada
+        </option>
       </select>
       <select
         name="EmpresaCosecha"
@@ -420,9 +587,15 @@ export default function FincaForm({  polygonData,
         value={formData.EmpresaCosecha}
         className="border p-2 w-full text-green-900 bg-green-100 placeholder-green-700"
       >
-        <option className="text-green-900 bg-green-50" value="">Seleccionar empresa de servicio</option>
-        <option className="text-green-900 bg-green-50" value="Empresa1">Empresa1</option>
-        <option className="text-green-900 bg-green-50" value="Empresa2">Empresa2</option>
+        <option className="text-green-900 bg-green-50" value="">
+          Seleccionar empresa de servicio
+        </option>
+        <option className="text-green-900 bg-green-50" value="Empresa1">
+          Empresa1
+        </option>
+        <option className="text-green-900 bg-green-50" value="Empresa2">
+          Empresa2
+        </option>
       </select>
       <input
         name="CondicionantesCosecha"
@@ -440,7 +613,7 @@ export default function FincaForm({  polygonData,
         max={100}
       />
 
-      <h2 className="font-bold text-lg mt-4 text-green-700">Objetivo de Inspecciones</h2>
+      <h2 className="font-bold text-lg mt-4 text-green-800">Objetivo de Inspecciones</h2>
       <input
         name="ObjetivoInspecciones"
         type="number"
@@ -450,12 +623,22 @@ export default function FincaForm({  polygonData,
         min={0}
       />
 
-      <button
-        type="submit"
-        className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded mt-4"
-      >
-        Guardar Finca
-      </button>
+      {/* Botón para cerrar el formulario */}
+      <div className="flex justify-end space-x-2 mt-6">
+        <button
+          type="button"
+          className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+          onClick={onClose}
+        >
+          Cerrar
+        </button>
+        <button
+          type="submit"
+          className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded"
+        >
+          Guardar Finca
+        </button>
+      </div>
     </form>
   );
 }

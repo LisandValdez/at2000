@@ -30,3 +30,10 @@ body {
   width: 100%;
   height: 400px;
 }
+
+html, body, #__next {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* opcional, para quitar scroll de body */
+}

@@ -1,6 +1,7 @@
 // hooks/useMapLogic.ts
 "use client";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation"; // 👈 Importa useRouter de Next.js
 import { db } from "../lib/firebase";
 import { collection } from "firebase/firestore";
 
@@ -8,6 +9,8 @@ export default function useMapLogic(
   mapRef: React.RefObject<HTMLDivElement | null>,
   options?: { onPolygonCreated?: (data: any) => void }
 ) {
+  const router = useRouter(); // 👈 Inicializa el router
+
   useEffect(() => {
     const leafletScript = document.createElement("script");
     leafletScript.src = "https://unpkg.com/leaflet/dist/leaflet.js";
@@ -65,43 +68,38 @@ export default function useMapLogic(
         },
       });
 
-      // 🟢 Agregar el control ANTES de cargar polígonos guardados
       map.addControl(drawControl);
 
       // 🔽 Traer fincas guardadas y dibujarlas después de agregar control
       try {
-  const { getDocs } = await import("firebase/firestore");
-  const snapshot = await getDocs(collection(db, "fincas"));
+        const { getDocs } = await import("firebase/firestore");
+        const snapshot = await getDocs(collection(db, "fincas"));
 
-  snapshot.forEach((doc: any) => {
-    const data = doc.data();
-    // Aquí convertimos [{lat, lng}, ...] a [[lat, lng], ...]
-    const polygonCoordsObjects = data.coordenadas;
+        snapshot.forEach((doc: any) => {
+          const data = doc.data();
+          const polygonCoordsObjects = data.coordenadas;
 
-    if (polygonCoordsObjects && Array.isArray(polygonCoordsObjects)) {
-      const polygonCoords = polygonCoordsObjects.map((coord: { lat: number; lng: number }) => [
-        coord.lat,
-        coord.lng,
-      ]);
+          if (polygonCoordsObjects && Array.isArray(polygonCoordsObjects)) {
+            const polygonCoords = polygonCoordsObjects.map((coord: { lat: number; lng: number }) => [
+              coord.lat,
+              coord.lng,
+            ]);
 
-      const polygon = L.polygon(polygonCoords, {
-        color: "green",
-        fillOpacity: 0.4,
-      }).addTo(map);
+            const polygon = L.polygon(polygonCoords, {
+              color: "green",
+              fillOpacity: 0.4,
+            }).addTo(map);
 
-      polygon.bindPopup(`<strong>${data.nombre || "Finca sin nombre"}</strong>`);
+            polygon.bindPopup(`<strong>${data.nombre || "Finca sin nombre"}</strong>`);
 
-      polygon.on("click", () => {
-        if (options?.onPolygonCreated) {
-          options.onPolygonCreated({ ...data, id: doc.id });
-        }
-      });
-    }
-  });
-} catch (error) {
-  console.error("Error cargando fincas desde Firestore:", error);
-}
-
+            polygon.on("click", () => {
+              router.push("/fincas");
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error cargando fincas desde Firestore:", error);
+      }
 
       map.on(L.Draw.Event.CREATED, (event: any) => {
         const layer = event.layer;
@@ -122,5 +120,5 @@ export default function useMapLogic(
       document.head.removeChild(leafletCSS);
       document.head.removeChild(drawCSS);
     };
-  }, [mapRef, options]);
+  }, [mapRef, options, router]);
 }

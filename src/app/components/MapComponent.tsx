@@ -17,8 +17,10 @@ export default function MapComponent() {
   });
 
   return (
-    <div style={{ height: "100vh", width: "100vw", position: "relative" }}>
-      <div ref={mapRef} id="map" style={{ height: "100%", width: "100%", position: "relative", zIndex: 1 }} />
+    <div style={{ height: "calc(100vh - 56px)", width: "100vw", position: "relative" }}>
+  {/* asumiendo header tiene 56px de alto */}
+  <div ref={mapRef} id="map" style={{ height: "100%", width: "100%", position: "relative", zIndex: 1 }} />
+  
       {showForm && (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-lg max-h-[80vh] overflow-auto w-full max-w-lg">

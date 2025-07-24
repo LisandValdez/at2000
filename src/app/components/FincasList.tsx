@@ -4,7 +4,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import FincaForm from "./PropertyForm";
 
@@ -48,6 +48,18 @@ export default function FincasList() {
     }
   };
 
+  const handleDeleteFinca = async (id: string) => {
+    if (!window.confirm("¿Seguro que deseas eliminar esta finca?")) return;
+    try {
+      await deleteDoc(doc(db, "fincas", id));
+      setFincas((prev) => prev.filter((f) => f.id !== id));
+      alert("Finca eliminada exitosamente.");
+    } catch (error) {
+      console.error("Error al eliminar finca:", error);
+      alert("Error al eliminar la finca.");
+    }
+  };
+
   if (loading) return <p>Cargando fincas...</p>;
 
   if (fincas.length === 0) return <p>No hay fincas aún.</p>;
@@ -78,9 +90,24 @@ export default function FincasList() {
                 borderRadius: "4px",
                 border: "none",
                 cursor: "pointer",
+                marginRight: "0.5rem",
               }}
             >
               Completar Formulario
+            </button>
+            <button
+              onClick={() => handleDeleteFinca(finca.id)}
+              style={{
+                marginTop: "0.5rem",
+                backgroundColor: "#dc2626",
+                color: "white",
+                padding: "6px 12px",
+                borderRadius: "4px",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Eliminar
             </button>
           </li>
         ))}
